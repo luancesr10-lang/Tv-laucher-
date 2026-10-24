@@ -12,13 +12,9 @@ Launcher próprio com o visual da sua imagem: menu lateral, banner, linha de app
 - **Se um app favorito não estiver instalado**, o cartão fica apagado e, ao clicar, abre a página dele na Play Store.
 - O botão Voltar leva sempre ao Início.
 
-## 1. Colocar o seu papel de parede (opcional)
+## 1. Papel de parede
 
-Copie sua imagem de fundo (sem a interface por cima) para:
-
-    app/src/main/res/drawable-nodpi/wallpaper.jpg
-
-Use 1920x1080, nome exatamente `wallpaper.jpg` (ou `wallpaper.png`). Sem esse arquivo, o launcher usa um degradê roxo.
+O projeto já inclui um cenário cósmico (planeta com anel, astronauta, montanhas e água) em `app/src/main/res/drawable-nodpi/wallpaper.jpg`. Para usar outra imagem, substitua esse arquivo mantendo o nome `wallpaper.jpg` (1920x1080, sem interface por cima).
 
 ## 2. Compilar o APK (no computador)
 

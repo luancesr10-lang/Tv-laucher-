@@ -34,7 +34,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
@@ -58,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -67,6 +68,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -76,6 +78,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -129,6 +132,12 @@ val FAVS = listOf(
     Fav("Disney+", listOf("com.disney.disneyplus"), listOf(Color(0xFF1A1050), Color(0xFF5A3AD0))),
     Fav("Max", listOf("com.wbd.stream", "com.hbo.hbonow"), listOf(Color(0xFF2A1A9A), Color(0xFF4A2AF0))),
     Fav("Spotify", listOf("com.spotify.tv.android"), listOf(Color(0xFF0A2A1A), Color(0xFF1A5A3A))),
+)
+
+// Regiões do cenário usadas como miniaturas em "Em destaque" (x, y de 0 a 1)
+val THUMB_ORIGINS = listOf(
+    0.62f to 0.30f, 0.72f to 0.62f, 0.25f to 0.30f,
+    0.50f to 0.72f, 0.85f to 0.25f, 0.40f to 0.55f,
 )
 
 val STREAMING_PACKAGES: Set<String> =
@@ -213,6 +222,8 @@ fun FocusCard(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(14.dp),
     idleBorder: Color = Color(0x33FFFFFF),
+    idleWidth: Dp = 1.dp,
+    glow: Color? = null,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
     content: @Composable BoxScope.(Boolean) -> Unit,
@@ -221,10 +232,14 @@ fun FocusCard(
     val scale by animateFloatAsState(if (focused) 1.05f else 1f, label = "scale")
     Box(
         modifier
+            .then(
+                if (glow != null) Modifier.shadow(14.dp, shape, ambientColor = glow, spotColor = glow)
+                else Modifier,
+            )
             .graphicsLayer(scaleX = scale, scaleY = scale)
             .onFocusChanged { focused = it.isFocused }
             .clip(shape)
-            .border(if (focused) 3.dp else 1.dp, if (focused) Color.White else idleBorder, shape)
+            .border(if (focused) 3.dp else idleWidth, if (focused) Color.White else idleBorder, shape)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
         content(focused)
@@ -295,7 +310,7 @@ fun LauncherApp(tick: Int, homeSignal: Int) {
         Wallpaper(Modifier.fillMaxSize())
         Box(
             Modifier.fillMaxSize().background(
-                Brush.verticalGradient(listOf(Color(0x55000000), Color(0x99000000))),
+                Brush.verticalGradient(listOf(Color(0x22000000), Color(0x77000000))),
             ),
         )
         Column(Modifier.fillMaxSize().padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 12.dp)) {
@@ -400,8 +415,8 @@ fun Sidebar(selected: Screen, firstFocus: FocusRequester, onSelect: (Screen) -> 
             .width(170.dp)
             .fillMaxHeight()
             .clip(shape)
-            .background(Color(0x66140A2E))
-            .border(1.dp, Color(0x33FFFFFF), shape)
+            .background(Color(0x88120828))
+            .border(1.dp, Color(0x668A3DFF), shape)
             .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -472,7 +487,7 @@ fun HomeContent(apps: List<AppEntry>, onOpen: (AppEntry) -> Unit, onAllApps: () 
         })
 
         Row(
-            Modifier.fillMaxWidth().height(74.dp),
+            Modifier.fillMaxWidth().height(80.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             FAVS.forEach { fav ->
@@ -512,16 +527,28 @@ fun HomeContent(apps: List<AppEntry>, onOpen: (AppEntry) -> Unit, onAllApps: () 
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
         ) {
-            items(others, key = { it.packageName }) { app ->
-                FocusCard(Modifier.width(130.dp).height(86.dp), onClick = { onOpen(app) }) {
-                    Column(
-                        Modifier.fillMaxSize().background(Color(0x55140A2E)).padding(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
+            itemsIndexed(others, key = { _, app -> app.packageName }) { index, app ->
+                val o = THUMB_ORIGINS[index % THUMB_ORIGINS.size]
+                FocusCard(Modifier.width(150.dp).height(90.dp), onClick = { onOpen(app) }) {
+                    Wallpaper(
+                        Modifier.fillMaxSize().graphicsLayer(
+                            scaleX = 2.6f,
+                            scaleY = 2.6f,
+                            transformOrigin = TransformOrigin(o.first, o.second),
+                        ),
+                    )
+                    Box(
+                        Modifier.fillMaxSize().background(
+                            Brush.verticalGradient(listOf(Color(0x11000000), Color(0xCC0A0418))),
+                        ),
+                    )
+                    Row(
+                        Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        app.icon?.let { Image(it, null, Modifier.size(42.dp)) }
-                        Spacer(Modifier.height(4.dp))
-                        T(app.label, 11.sp)
+                        app.icon?.let { Image(it, null, Modifier.size(28.dp)) }
+                        Spacer(Modifier.width(6.dp))
+                        T(app.label, 11.sp, modifier = Modifier.weight(1f), weight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -535,7 +562,9 @@ fun Hero(onClick: () -> Unit) {
     FocusCard(
         Modifier.fillMaxWidth().height(190.dp),
         shape = shape,
-        idleBorder = Color(0xFF8A3DFF),
+        idleBorder = Color(0xFFA855FF),
+        idleWidth = 2.dp,
+        glow = Color(0xFF9B4DFF),
         onClick = onClick,
     ) {
         Wallpaper(Modifier.fillMaxSize(), alignment = BiasAlignment(0.3f, 0f))
